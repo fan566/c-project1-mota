@@ -11,8 +11,13 @@
 #include<sstream>
 #include<string>
 #include<algorithm>
+#include <iostream>
+#include <thread>
+#include <atomic>
+#include <chrono>
 using namespace std;
 Scence* Scence::scen=nullptr;
+std::atomic<bool> should_exit(false);
 int prid=1;
 Shop::Shop()
 {
@@ -136,6 +141,11 @@ void Medicine::Load(std::fstream &f)
 }
 Scence::Scence()
 {
+    flag=nullptr;
+    InitAll();
+}
+void Scence::InitAll()
+{
     for(int i=0;i<MapSize;i++){
         for(int j=0;j<MapSize;j++){
             Map[i][j]="🔳";
@@ -144,8 +154,12 @@ Scence::Scence()
     InintPlayer();
     InintVTreasureBox();
     InintMonsters();
-
+    int a;
+    flag=&a;
 }
+
+
+
 std::pair<int, int> Scence::GetRandPostion()
 {
     while(1){
@@ -209,6 +223,7 @@ std::pair<int, int> Scence::GetRandPostionTreasue()
     }
 }
 
+
 void Scence::InintMonsters()
 {
     int i=0;
@@ -257,10 +272,35 @@ void Scence::InintVTreasureBox()
         mVTreasureBox.back()->generateContents(shop);
    }
 }
+int Scence::CheckMonstersCount()
+{
+    return count_if(m_monster.begin(),m_monster.end(),[]( auto & mster){
+        return mster->GetHP()==0;
+    });
+}
+
+void Scence::RefleshMonster()
+{
+    for(auto & mster:m_monster){
+        mster->Reflesh();
+        pair p= GetRandPostion();
+        mster->GetX()=p.first;
+        mster->GetY()=p.second;
+    }
+    
+    
+}
+
+
 
 void Scence::ScenceDisplay(int flag)
 {
     Clear();
+    int count= CheckMonstersCount();
+    if(count==m_monster.size()){
+        RefleshMonster();
+    }
+
     Map[player->GetY()][player->GetX()]=player->GetSymbol();
     for(int i=0;i<mVTreasureBox.size();i++){
         if(mVTreasureBox[i]->Getcoins()>0)
@@ -326,18 +366,6 @@ void Scence::GUIRun()
     }
 }
 
-void Scence::PersonalSet()
-{
-    Tools::printFormattedOutput(60,1,{"...persenal message and set..."});
-    Tools::printFormattedOutput(60,0,{"SYMBOL",player->GetName()});
-    Tools::printFormattedOutput(60,0,{"NAME",player->GetName()});
-    Tools::printFormattedOutput(60,0,{"HP",player->GetHP()});
-    Tools::printFormattedOutput(60,0,{"ATTACK",player->GetAttack()});
-    Tools::printFormattedOutput(60,0,{"DEFEND",player->GetDefend()});
-    Tools::printFormattedOutput(60,0,{"EXP",player->GetExp()});
-    Tools::printFormattedOutput(60,0,{"LEVEL",player->()});
-}
-
 void Scence::MoveTreasueBox(STreasureBox& box)
 {
     
@@ -355,11 +383,21 @@ void Scence::MoveTreasueBox(STreasureBox& box)
             Tools::printFormattedOutput(60,1,{str.c_str()});
         }
     }
+
     Tools::Delaymoment(2000);
     box->GetContents().clear();
    
 }
 
+
+void Scence::FightTread()
+{
+    
+}
+
+void Scence::CinTread()
+{
+}
 
 void Scence::MoveMonsters(SMonster &mster)
 {
@@ -370,8 +408,8 @@ void Scence::MoveMonsters(SMonster &mster)
     while(1){
         system("clear");
         ScenceDisplay(1);
-        Tools::printFormattedOutput(80,0,{"SYMBOL","NAME","HP","MONEY","ATTACK","DEEFER","EXP","LEVEL"});
-        player->DisPlayList({"SYMBOL","NAME","HP","MONEY","ATTACK","DEFEND","EXP","LEVEL"});
+        // Tools::printFormattedOutput(80,0,{"SYMBOL","NAME","HP","MONEY","ATTACK","DEEFER","EXP","LEVEL"});
+        // player->DisPlayList({"SYMBOL","NAME","HP","MONEY","ATTACK","DEFEND","EXP","LEVEL"});
         Tools::printFormattedOutput(80,0,{"SYMBOL","NAME","HP","MONEY","ATTACK","DEFEND","EXP"," "});
         mster->Display({"SYMBOL","NAME","HP","MONEY","ATTACK","DEFEND","EXP"});
         int result=FightTOFight(mster,sumPlayATT,summsterATT);
@@ -409,8 +447,6 @@ int Scence::FightTOFight(SMonster &mster,int&sumPlayATT,int &summsterATT )
     }
     return 2;
 }
-
-
 
 
 variant<STreasureBox, SMonster,bool> Scence::IsPositonEqual(SPlayer &player)
@@ -931,9 +967,7 @@ void Menu::MenuDisplay()
         std::cout << "|                                            |" << std::endl;
         std::cout << "|           2.    Archive                    |" << std::endl;
         std::cout << "|                                            |" << std::endl;
-        std::cout << "|           3.    EntityDisplay              |" << std::endl;
-        std::cout << "|                                            |" << std::endl;
-        std::cout << "|           4.    exit                       |" << std::endl;
+        std::cout << "|           3.    exit                       |" << std::endl;
         std::cout << "|                                            |" << std::endl;
         std::cout << "----------------------------------------------" << std::endl;
         std::cout << "Please enter your choice: \n"; 
@@ -951,10 +985,10 @@ void Menu::MenuDisplay()
         case 2:Archive();
             /* code */
             break;
-        case 3:EntityDisplay();
-            /* code */
-            break;
-        case 4:
+        // case 3:EntityDisplay();
+        //     /* code */
+        //     break;
+        case 3:
             std::exit(0);
             /* code */
             break;
@@ -967,15 +1001,7 @@ void Menu::MenuDisplay()
 
 void Menu::Play()
 {
-    // while (true) {
-    //     mpscence->GUIRun();
-    //     char choice;
-    //     cout << "游戏结束。是否返回主菜单？(y/n): ";
-    //     cin >> choice;
-    //     if (choice == 'y' || choice == 'Y') {
-    //         break;
-    //     }
-    // }
+    // Scence::scen->InitAll();
 }
 
 void Menu::Continue()
@@ -1045,7 +1071,11 @@ void Menu::Archive()
     // Tools::Delaymoment();
 
 
-
+    // if(mpscence->flag==nullptr){
+    //     Tools::printFormattedOutput(80,0,{"未有玩家数据更新，请进入新游戏"});
+    //     Tools::Delaymoment(1000);
+    //     return ;
+    // }
     string dir = "./文档/" + name;
     if (system(("mkdir -p " + dir).c_str()) != 0) {
         perror ( "无法创建目录" );

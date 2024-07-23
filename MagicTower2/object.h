@@ -235,21 +235,30 @@ protected:
 class Player:public VirtualObject{
 public:
     Player(){};
+    void OldCopy(){
+        player=new Player();
+        (*player)=*this;};
+    ~Player(){delete player;}
+    void Reflesh(){*this=*player;}
     DEFINE_SETGET(bag,Bag);
+    DEFINE_SETGET(Level,int);
     void PlayerMove(char seletct);
     Player(int x,int y,const string& symbol,const string&name,int money,int hp,int attack,int defend,int exp=0,int level=0)
-    :VirtualObject(x,y,symbol,name,money,hp,attack,defend,exp),Level(level){}
+    :VirtualObject(x,y,symbol,name,money,hp,attack,defend,exp),Level(level){
+        OldCopy();
+    }
     void Display(){
         printf("位置x：%d，位置y:%d，头像：%s,姓名：%s 金币：%d\n 生命：%d 攻击力：%d 防御力：%d 经验：%d 等级：%d\n",X,Y,
         Symbol.c_str(),Name.c_str(),Money,HP,Attack,Defend,Exp,Level);
     }
     void DisPlayList(initializer_list<string> alist);
     void Save(std::fstream& f) const ;
-
-    void Load(std::fstream& f,Shop& shop)  ;
+    void Load(std::fstream& f,Shop& shop);
 private:
+    
     int Level;
     Bag bag;
+    Player* player;
 };
 
 
@@ -262,7 +271,7 @@ public:
 class BuildCPlayer:public BuildPlayer{
 public: 
     BuildCPlayer(){
-        m_player=make_shared<Player>(0,0,"🤓","小明",100,200,10,5,5,0);
+        m_player=make_shared<Player>(0,0,"🤓","小明",100,200,100,5,5,0);
     }
     shared_ptr<Player> GetPlayer(){
         return m_player;
@@ -274,8 +283,15 @@ private:
 class Monster:public VirtualObject{
 public:
     Monster(){}
+
+    void OldCopy(){
+    monster=new Monster();
+    (*monster)=*this;};
+    ~Monster(){delete monster;}
+    void Reflesh(){*this=*monster;}
+
     Monster(int x,int y,const std::string& symbol,const::string&name,int money,int hp,int attack,int defend,int exp=0)
-    :VirtualObject(x,y,symbol,name,money,hp,attack,defend,exp){}
+    :VirtualObject(x,y,symbol,name,money,hp,attack,defend,exp){ OldCopy();}
     void Display(){
         printf("位置x：%d，位置y:%d，头像：%s,姓名：%s 金币：%d\n 生命：%d 攻击力：%d 防御力：%d 经验：%d\n",X,Y,
         Symbol.c_str(),Name.c_str(),Money,HP,Attack,Defend,Exp);
@@ -285,7 +301,8 @@ public:
     void Save(std::fstream& f) const ; 
 
     void Load(std::fstream& f)  ;
-   
+private:
+    Monster* monster;
 };
 
 
@@ -365,9 +382,12 @@ using SPlayer=shared_ptr<Player>;
 
 class Scence{
 public:
-    DEFINE_SETGET(shop,Shop);
+    DEFINE_SETGET(shop,Shop)
+    DEFINE_SETGET(player,SPlayer)
+
     std::pair<int, int> GetRandPostion();
     std::pair<int, int> GetRandPostionTreasue();
+    void InitAll();
     void InintMonsters();
     void InintPlayer();
     void InintVTreasureBox();
@@ -385,9 +405,16 @@ public:
     void LoadVTreaBox(std::fstream &f);
     static Scence* GetSingScence();
     static void Delete();
+    int * GetFlag();
     void Clear();
     int FightTOFight(SMonster &mster,int&sumPlayATT,int &summsterATT );
+    int CheckMonstersCount();
+    void RefleshMonster();
+
+    void FightTread();
+    void CinTread();
 private:
+
     static Scence* scen;
     Scence();
     Scence(const Scence& scen)=delete;
@@ -397,6 +424,7 @@ private:
     vector<STreasureBox>mVTreasureBox; 
     SPlayer player;
     Shop shop;
+    int *flag;
 };
 
 
@@ -431,6 +459,7 @@ public:
     void exit();
     virtual void update(const std::string& news){
         name=news;
+        mpscence->Getplayer()->GetName()=name;
     }
 private:
     string name;

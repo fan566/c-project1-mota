@@ -10,9 +10,9 @@ int main(){
     Menu menu(s);
     l.attach(&menu);
     
-    l.Display();
+    // l.Display();
     while(true){
-        menu.MenuDisplay();
+        // menu.MenuDisplay();
         s->GUIRun();
     }
     // Log l;

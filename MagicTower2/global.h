@@ -1,4 +1,6 @@
-#define MapSize 20
-#define MONSTER_SIZE 12
+#define MapSize 5
+#define MONSTER_SIZE 1
 #define BOX_CONTENT_SIZE 2
-#define TreasureBoxCount 5
+#define TreasureBoxCount 3
+
+
